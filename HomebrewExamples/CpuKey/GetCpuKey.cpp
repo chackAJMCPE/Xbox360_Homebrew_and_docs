@@ -17,12 +17,6 @@ unsigned long long __declspec(naked) HvxPeekCall(DWORD key, unsigned long long t
 	}
 }
 
-unsigned long long HvxPeek(unsigned long long SourceAddress, unsigned long long DestAddress, unsigned long long lenInBytes)
-{
-	return HvxPeekCall(0x72627472, 5, SourceAddress, DestAddress, lenInBytes);
-}
-
-
 bool GetCPUKey()
 {
     const char hexChars[] = "0123456789ABCDEF";
@@ -35,7 +29,7 @@ bool GetCPUKey()
                              ((DWORD)MmGetPhysicalAddress(buf) & 0xFFFFFFFF);
     ZeroMemory(buf, 0x10);
 
-    unsigned long long ret = HvxPeek(0x20ULL, dest, 0x10ULL);
+    unsigned long long ret = HvxPeekCall(0x72627472, 5, 0x20ULL, dest, 0x10ULL);
     
     if(ret == 0x72627472 || ret == dest)
     {
@@ -54,8 +48,6 @@ bool GetCPUKey()
     XPhysicalFree(buf);
     return false;
 }
-
-
 
 /*
 int main() // optionally print the cpu key to UART 
