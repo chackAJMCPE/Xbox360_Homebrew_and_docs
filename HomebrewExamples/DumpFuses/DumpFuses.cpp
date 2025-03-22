@@ -1,5 +1,5 @@
 /*
-This code grabs the CPU key from memory and puts it into keybuf (as you can see under declarations)
+This code reads the fusesets from memory, and optionally prints them to UART.
 Use it however you want; its all supposed to be free to use for anyone!
 - chackAJMCPE
 */
