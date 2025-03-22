@@ -5,7 +5,7 @@ Use it however you want; its all supposed to be free to use for anyone!
 */
 #include "stdafx.h" // Visual Studio needs this, idk why. You cant compile without it.
 #include <stdio.h> // for printf and other functions
-unsigned char keybuf[0x10];
+char cpuKeyHexString[33] = {0}; // Stores CPU key as "112233445566..." (32 chars + null)
 extern "C" NTSYSAPI PVOID NTAPI MmGetPhysicalAddress(IN PVOID Address);
 
 unsigned long long __declspec(naked) HvxPeekCall(DWORD key, unsigned long long type, unsigned long long SourceAddress, unsigned long long DestAddress, unsigned long long lenInBytes)
@@ -25,43 +25,53 @@ unsigned long long HvxPeek(unsigned long long SourceAddress, unsigned long long 
 
 bool GetCPUKey()
 {
-	PBYTE buf = (PBYTE)XPhysicalAlloc(0x10, MAXULONG_PTR, 0, MEM_LARGE_PAGES|PAGE_READWRITE|PAGE_NOCACHE);
-	if (buf != NULL)
-	{
-		unsigned long long dest = 0x8000000000000000ULL | ((DWORD)MmGetPhysicalAddress(buf)&0xFFFFFFFF);
-		ZeroMemory(buf, 0x10);
-		unsigned long long ret = HvxPeek(0x20ULL, dest, 0x10ULL);
-		if(ret == 0x72627472 || ret == dest)
-		{
-			memcpy(keybuf, buf, 0x10);
-			XPhysicalFree(buf);
-			return true;
-		}
-		else
-			printf("SysCall Return value: 0x%llX\n", ret);
-		XPhysicalFree(buf);
-	}
-	return false;
+    const char hexChars[] = "0123456789ABCDEF";
+    PBYTE buf = (PBYTE)XPhysicalAlloc(0x10, MAXULONG_PTR, 0, 
+                MEM_LARGE_PAGES|PAGE_READWRITE|PAGE_NOCACHE);
+    
+    if(!buf) return false;
+
+    unsigned long long dest = 0x8000000000000000ULL | 
+                             ((DWORD)MmGetPhysicalAddress(buf) & 0xFFFFFFFF);
+    ZeroMemory(buf, 0x10);
+
+    unsigned long long ret = HvxPeek(0x20ULL, dest, 0x10ULL);
+    
+    if(ret == 0x72627472 || ret == dest)
+    {
+        // Directly convert buffer to hex string
+        for(int i = 0; i < 16; i++)
+        {
+            cpuKeyHexString[i*2]   = hexChars[(buf[i] >> 4) & 0x0F];
+            cpuKeyHexString[i*2+1] = hexChars[buf[i] & 0x0F];
+        }
+        cpuKeyHexString[32] = '\0';
+        
+        XPhysicalFree(buf);
+        return true;
+    }
+    
+    XPhysicalFree(buf);
+    return false;
 }
 
 
 
-/* 
-int main() // optionally print the cpu key to UART
+/*
+int main() // optionally print the cpu key to UART 
 {
-    if(GetCPUKey())
+    if(GetCPUKey()) 
     {
-        printf("CPU Key: ");
-        for (int i = 0; i < 0x10; i++)
-        {
-            printf("%02X", keybuf[i]);
-        }
-        printf("\n");
-    }
-    else
+        printf("CPU Key: %s\n", cpuKeyHexString);
+    } 
+    else 
     {
-        printf("Failed to retrieve CPU Key.\n");
+        printf("Failed to retrieve CPU Key\n");
     }
+    
+    // Optional: Add system pause if running in debug environment
+    // while(1);  // For embedded systems
     return 0;
 }
 */
+
