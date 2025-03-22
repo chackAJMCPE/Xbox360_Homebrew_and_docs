@@ -5,7 +5,7 @@ Use it however you want; its all supposed to be free to use for anyone!
 */
 #include "stdafx.h" // Visual Studio needs this, idk why. You cant compile without it.
 #include <stdio.h> // for printf and other functions
-char cpuKeyHexString[33] = {0}; // Stores CPU key as "112233445566..." (32 chars + null)
+char CPUKey[33] = {0}; // Stores CPU key as "112233445566..." (32 chars + null)
 extern "C" NTSYSAPI PVOID NTAPI MmGetPhysicalAddress(IN PVOID Address);
 
 unsigned long long __declspec(naked) HvxPeekCall(DWORD key, unsigned long long type, unsigned long long SourceAddress, unsigned long long DestAddress, unsigned long long lenInBytes)
@@ -42,10 +42,10 @@ bool GetCPUKey()
         // Directly convert buffer to hex string
         for(int i = 0; i < 16; i++)
         {
-            cpuKeyHexString[i*2]   = hexChars[(buf[i] >> 4) & 0x0F];
-            cpuKeyHexString[i*2+1] = hexChars[buf[i] & 0x0F];
+            CPUKey[i*2]   = hexChars[(buf[i] >> 4) & 0x0F];
+            CPUKey[i*2+1] = hexChars[buf[i] & 0x0F];
         }
-        cpuKeyHexString[32] = '\0';
+        CPUKey[32] = '\0';
         
         XPhysicalFree(buf);
         return true;
@@ -62,7 +62,7 @@ int main() // optionally print the cpu key to UART
 {
     if(GetCPUKey()) 
     {
-        printf("CPU Key: %s\n", cpuKeyHexString);
+        printf("CPU Key: %s\n", CPUKey);
     } 
     else 
     {
@@ -74,4 +74,3 @@ int main() // optionally print the cpu key to UART
     return 0;
 }
 */
-
